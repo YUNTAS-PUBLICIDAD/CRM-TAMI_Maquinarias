@@ -1,0 +1,8 @@
+{
+  "name": "Whato CRM",
+  "description": "Sistema CRM para WhatsApp & Omnicanal, Chatbot IA con Gemini, Funnel Kanban, Campañas Masivas, Automatización y Extensión Multi-agente.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
