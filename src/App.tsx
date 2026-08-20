@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { 
   Contact, Conversation, Message, Segment, Campaign, AutomationRule, 
-  ApiKey, WebhookConfig, WebhookLog, PipelineStage, SocialChannel 
+  ApiKey, WebhookConfig, WebhookLog, PipelineStage, SocialChannel, QuickReply 
 } from './types';
 import { 
   INITIAL_CONTACTS, INITIAL_CONVERSATIONS, INITIAL_MESSAGES, 
   INITIAL_SEGMENTS, INITIAL_CAMPAIGN, INITIAL_AUTOMATIONS, 
-  INITIAL_API_KEYS, INITIAL_WEBHOOK, INITIAL_WEBHOOK_LOGS, INITIAL_ANALYTICS 
+  INITIAL_API_KEYS, INITIAL_WEBHOOK, INITIAL_WEBHOOK_LOGS, INITIAL_ANALYTICS,
+  INITIAL_QUICK_REPLIES 
 } from './mockData';
 
 import { Header } from './components/Header';
@@ -20,6 +21,8 @@ import { ApiGithubView } from './components/ApiGithub/ApiGithubView';
 import { AnalyticsView } from './components/Analytics/AnalyticsView';
 import { GithubModal } from './components/GithubModal';
 
+const LOCAL_STORAGE_QUICK_REPLIES_KEY = 'xio_crm_quick_replies_v2';
+
 export default function App() {
   const [activeTab, setActiveTab] = useState<string>('inbox');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -29,6 +32,31 @@ export default function App() {
   const [conversations, setConversations] = useState<Conversation[]>(INITIAL_CONVERSATIONS);
   const [messagesMap, setMessagesMap] = useState<Record<string, Message[]>>(INITIAL_MESSAGES);
   const [activeConversationId, setActiveConversationId] = useState<string>('conv_c1');
+  
+  // Persistent Quick Replies in LocalStorage
+  const [quickReplies, setQuickReplies] = useState<QuickReply[]>(() => {
+    try {
+      const saved = localStorage.getItem(LOCAL_STORAGE_QUICK_REPLIES_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch {
+      // Fallback
+    }
+    return INITIAL_QUICK_REPLIES;
+  });
+
+  // Sync quickReplies changes to LocalStorage
+  React.useEffect(() => {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_QUICK_REPLIES_KEY, JSON.stringify(quickReplies));
+    } catch {
+      // ignore
+    }
+  }, [quickReplies]);
 
   const [segments, setSegments] = useState<Segment[]>(INITIAL_SEGMENTS);
   const [campaigns, setCampaigns] = useState<Campaign[]>(INITIAL_CAMPAIGN);
@@ -44,7 +72,7 @@ export default function App() {
   const unreadTotal = conversations.reduce((acc, c) => acc + c.unreadCount, 0);
 
   // Handle Send Message
-  const handleSendMessage = (conversationId: string, text: string, aiGenerated: boolean = false) => {
+  const handleSendMessage = (conversationId: string, text: string, aiGenerated: boolean = false, mediaUrl?: string) => {
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const conv = conversations.find(c => c.id === conversationId);
     if (!conv) return;
@@ -53,12 +81,13 @@ export default function App() {
       id: `m_${Date.now()}`,
       conversationId,
       sender: 'agent',
-      senderName: 'Asistente Whato CRM',
+      senderName: 'Asistente XIO CRM',
       text,
       timestamp,
       channel: conv.channel,
       status: 'sent',
-      aiGenerated
+      aiGenerated,
+      mediaUrl
     };
 
     // Update Messages Map
@@ -72,7 +101,7 @@ export default function App() {
       if (c.id === conversationId) {
         return {
           ...c,
-          lastMessage: text,
+          lastMessage: mediaUrl ? `📷 ${text || 'Imagen adjunta'}` : text,
           lastMessageTime: 'Ahora',
           unreadCount: 0
         };
@@ -85,9 +114,9 @@ export default function App() {
   const handleSimulateIncomingMessage = async () => {
     const randomChannel: SocialChannel = ['whatsapp', 'instagram', 'twitter'][Math.floor(Math.random() * 3)] as SocialChannel;
     const sampleQuestions = [
-      "¡Hola! ¿Cómo instalo la extensión de Whato para WhatsApp Web y cuánto cuesta el plan anual?",
+      "¡Hola! ¿Cómo instalo la extensión de XIO para WhatsApp Web y cuánto cuesta el plan anual?",
       "Buenas tardes, quisiera solicitar una demo ejecutiva para mi equipo de 10 asesores.",
-      "Hola 👋 ¿Puedo conectar Google Calendar con Whato CRM para agendar reuniones desde el chat?"
+      "Hola 👋 ¿Puedo conectar Google Calendar con XIO CRM para agendar reuniones desde el chat?"
     ];
     const questionText = sampleQuestions[Math.floor(Math.random() * sampleQuestions.length)];
 
@@ -154,8 +183,43 @@ export default function App() {
 
   // Update Contact Stage
   const handleUpdateContactStage = (contactId: string, newStage: PipelineStage) => {
-    setContacts(prev => prev.map(c => c.id === contactId ? { ...c, stage: newStage } : c));
-    setConversations(prev => prev.map(c => c.contactId === contactId ? { ...c, contact: { ...c.contact, stage: newStage } } : c));
+    setContacts(prev => prev.map(c => {
+      if (c.id === contactId) {
+        const interactions = { ...(c.interactions || {}) };
+        if (newStage === 'qualified') {
+          interactions.firstReply = true;
+        } else if (newStage === 'negotiation') {
+          interactions.firstReply = true;
+          interactions.appointmentConfirmed = true;
+        } else if (newStage === 'closed_won') {
+          interactions.firstReply = true;
+          interactions.appointmentConfirmed = true;
+          interactions.proposalSent = true;
+          interactions.dealClosed = true;
+        }
+        return { ...c, stage: newStage, interactions };
+      }
+      return c;
+    }));
+
+    setConversations(prev => prev.map(c => {
+      if (c.contactId === contactId) {
+        const interactions = { ...(c.contact.interactions || {}) };
+        if (newStage === 'qualified') {
+          interactions.firstReply = true;
+        } else if (newStage === 'negotiation') {
+          interactions.firstReply = true;
+          interactions.appointmentConfirmed = true;
+        } else if (newStage === 'closed_won') {
+          interactions.firstReply = true;
+          interactions.appointmentConfirmed = true;
+          interactions.proposalSent = true;
+          interactions.dealClosed = true;
+        }
+        return { ...c, contact: { ...c.contact, stage: newStage, interactions } };
+      }
+      return c;
+    }));
 
     // Log Webhook event automatically
     const newLog: WebhookLog = {
@@ -167,6 +231,92 @@ export default function App() {
       durationMs: 85
     };
     setWebhookLogs(prev => [newLog, ...prev]);
+  };
+
+  // Toggle Contact Interaction & Auto-Transition Stages
+  const handleToggleContactInteraction = (
+    contactId: string,
+    interactionKey: 'firstReply' | 'appointmentConfirmed' | 'proposalSent' | 'dealClosed'
+  ) => {
+    setContacts(prev => prev.map(c => {
+      if (c.id === contactId) {
+        const currentInteractions = c.interactions || {};
+        const isTurningOn = !currentInteractions[interactionKey];
+        const updatedInteractions = {
+          ...currentInteractions,
+          [interactionKey]: isTurningOn
+        };
+
+        let newStage = c.stage;
+        // Automatización 1: 1era interacción positiva (Rojo) -> pasa a Cualificados
+        if (interactionKey === 'firstReply' && isTurningOn) {
+          if (c.stage === 'lead') {
+            newStage = 'qualified';
+          }
+        }
+        // Automatización 2: 2da interacción positiva a recordatorio de cita (Amarillo) -> pasa a Negociación
+        if (interactionKey === 'appointmentConfirmed' && isTurningOn) {
+          updatedInteractions.firstReply = true;
+          if (c.stage === 'lead' || c.stage === 'qualified') {
+            newStage = 'negotiation';
+          }
+        }
+        // Automatización 3: Cierre de Venta
+        if (interactionKey === 'dealClosed' && isTurningOn) {
+          updatedInteractions.firstReply = true;
+          updatedInteractions.appointmentConfirmed = true;
+          updatedInteractions.proposalSent = true;
+          newStage = 'closed_won';
+        }
+
+        return {
+          ...c,
+          stage: newStage,
+          interactions: updatedInteractions
+        };
+      }
+      return c;
+    }));
+
+    setConversations(prev => prev.map(conv => {
+      if (conv.contactId === contactId) {
+        const currentInteractions = conv.contact.interactions || {};
+        const isTurningOn = !currentInteractions[interactionKey];
+        const updatedInteractions = {
+          ...currentInteractions,
+          [interactionKey]: isTurningOn
+        };
+
+        let newStage = conv.contact.stage;
+        if (interactionKey === 'firstReply' && isTurningOn) {
+          if (conv.contact.stage === 'lead') {
+            newStage = 'qualified';
+          }
+        }
+        if (interactionKey === 'appointmentConfirmed' && isTurningOn) {
+          updatedInteractions.firstReply = true;
+          if (conv.contact.stage === 'lead' || conv.contact.stage === 'qualified') {
+            newStage = 'negotiation';
+          }
+        }
+        if (interactionKey === 'dealClosed' && isTurningOn) {
+          updatedInteractions.firstReply = true;
+          updatedInteractions.appointmentConfirmed = true;
+          updatedInteractions.proposalSent = true;
+          newStage = 'closed_won';
+        }
+
+        return {
+          ...conv,
+          contact: {
+            ...conv.contact,
+            stage: newStage,
+            interactions: updatedInteractions
+          }
+        };
+      }
+      return conv;
+    }));
   };
 
   // Update Contact Tags
@@ -195,10 +345,10 @@ export default function App() {
       contact: newContact,
       channel: newContact.channel,
       unreadCount: 0,
-      lastMessage: 'Contacto registrado en el CRM Whato.',
+      lastMessage: 'Contacto registrado en el CRM XIO.',
       lastMessageTime: 'Ahora',
       status: 'open',
-      assignedAgent: 'Asesor Whato'
+      assignedAgent: 'Asesor XIO'
     };
 
     setConversations(prev => [newConv, ...prev]);
@@ -208,7 +358,7 @@ export default function App() {
         id: `m_${Date.now()}`,
         conversationId: newConvId,
         sender: 'bot',
-        senderName: 'Whato CRM Engine',
+        senderName: 'XIO CRM Engine',
         text: `Lead registrado vía ${newContact.channel.toUpperCase()}. Score inicial de IA: ${newContact.leadScore}%`,
         timestamp: 'Ahora',
         channel: newContact.channel,
@@ -310,6 +460,8 @@ export default function App() {
               onUpdateContactTags={handleUpdateContactTags}
               onUpdateContactNotes={handleUpdateContactNotes}
               searchQuery={searchQuery}
+              quickReplies={quickReplies}
+              onUpdateQuickReplies={setQuickReplies}
             />
           )}
 
@@ -317,6 +469,7 @@ export default function App() {
             <ContactsView
               contacts={contacts}
               onUpdateStage={handleUpdateContactStage}
+              onToggleInteraction={handleToggleContactInteraction}
               onAddContact={handleAddContact}
               onSelectConversationByContactId={handleSelectConversationByContactId}
             />

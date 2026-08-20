@@ -4,6 +4,29 @@ export type LeadSentiment = 'positive' | 'neutral' | 'urgent' | 'churn_risk';
 
 export type PipelineStage = 'lead' | 'qualified' | 'negotiation' | 'closed_won' | 'closed_lost';
 
+export interface ContactInteractions {
+  firstReply?: boolean; // 1era Interacción: Respuesta positiva -> Pasa a Cualificados (Rojo)
+  appointmentConfirmed?: boolean; // 2da Interacción: Confirmación de Cita -> Pasa a Negociación (Amarillo)
+  proposalSent?: boolean; // 3ra Interacción: Propuesta/Cotización
+  dealClosed?: boolean; // 4ta Interacción: Cierre/Pago
+}
+
+export interface PresetImage {
+  id: string;
+  name: string;
+  url: string;
+  type?: string;
+}
+
+export interface QuickReply {
+  id: string;
+  title: string;
+  emoji?: string;
+  text: string;
+  imageUrl?: string;
+  category?: 'saludo' | 'ventas' | 'precios' | 'soporte' | 'general';
+}
+
 export interface Contact {
   id: string;
   name: string;
@@ -22,6 +45,7 @@ export interface Contact {
   location?: string;
   company?: string;
   customFields?: Record<string, string>;
+  interactions?: ContactInteractions;
 }
 
 export interface Message {
@@ -69,6 +93,7 @@ export interface Campaign {
   segmentId: string;
   segmentName: string;
   content: string;
+  imageUrl?: string;
   status: 'draft' | 'scheduled' | 'running' | 'completed';
   sentCount: number;
   deliveredCount: number;

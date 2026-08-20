@@ -1,7 +1,7 @@
-# Contexto General del Proyecto: Whato CRM
+# Contexto General del Proyecto: XIO CRM
 
 ## 1. Visión General
-**Whato CRM** es una plataforma omnicanal de gestión de relaciones con clientes (CRM) y ventas diseñada específicamente para **WhatsApp Web**, Instagram, X (Twitter) y Messenger. Combina un tablero Kanban visual, automatización de flujos de trabajo, integración directa con **Google Calendar** y asistentes de Inteligencia Artificial impulsados por **Google Gemini 3.6 Flash**.
+**XIO CRM** es una plataforma omnicanal de gestión de relaciones con clientes (CRM) y ventas diseñada específicamente para **WhatsApp Web**, Instagram, X (Twitter) y Messenger. Combina un tablero Kanban visual, automatización de flujos de trabajo, integración directa con **Google Calendar** y asistentes de Inteligencia Artificial impulsados por **Google Gemini 3.6 Flash**.
 
 La aplicación proporciona una interfaz fluida para equipos de ventas y gestión interna multiagente, permitiendo calificar leads, automatizar campañas masivas de difusión, generar respuestas inteligentes asistidas por IA y exportar el proyecto completo para despliegue en producción.
 
@@ -21,7 +21,7 @@ La aplicación proporciona una interfaz fluida para equipos de ventas y gestión
 ### 3.1. Inbox WhatsApp & Chat Omnicanal (`/src/components/Inbox/InboxView.tsx`)
 - **Gestión Multiagente de Conversaciones:** Filtrado rápido por canal (WhatsApp, Instagram, Twitter/X, Messenger).
 - **Interfaz Estilo WhatsApp Web:** Renderizado de hilos de chat con badges de estado, remitentes, marcas de tiempo e indicación de mensajes de bot/agente.
-- **Panel de Extensión Whato CRM (Lado Derecho):**
+- **Panel de Extensión XIO CRM (Lado Derecho):**
   - Estado del lead y Score de Inteligencia Artificial (0-100).
   - Selector de etapa del embudo de ventas (Prospecto, Cualificado, Negociación, Venta Ganada, Perdido).
   - Sincronización directa de citas en **Google Calendar** (fecha, hora y notificación automatizada al cliente).

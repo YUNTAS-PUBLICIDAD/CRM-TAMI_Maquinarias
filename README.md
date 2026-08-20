@@ -1,8 +1,10 @@
-# Whato CRM - Plataforma Omnicanal & Extensión para WhatsApp Web
+# XIO CRM - Plataforma Omnicanal & Extensión para WhatsApp Web
 
-Plataforma CRM de ventas omnicanal multiagente que integra gestión de clientes en tableros Kanban, automatizaciones con IA (Google Gemini 3.6 Flash), agendamiento en Google Calendar y envíos de campañas masivas de difusión.
+Plataforma CRM de ventas omnicanal multiagente que integra gestión de clientes en tableros Kanban, automatizaciones con IA (Google Gemini 3.6 Flash), agendamiento en Google Calendar, respuestas rápidas con botones persistentes y envíos de campañas masivas de difusión.
 
-Para ver el contexto detallado y la arquitectura técnica completa del proyecto, consulta el archivo [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md).
+Para ver la documentación completa y detallada del proyecto, consulta:
+- 📖 [**DOCUMENTACION.md**](./DOCUMENTACION.md) — Manual de usuario, arquitectura, endpoints y características del sistema.
+- 📋 [**PROJECT_CONTEXT.md**](./PROJECT_CONTEXT.md) — Resumen técnico del proyecto y modelos de datos.
 
 ## Requisitos y Configuración
 

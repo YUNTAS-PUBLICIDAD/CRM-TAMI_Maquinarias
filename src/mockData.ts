@@ -1,4 +1,4 @@
-import { Contact, Conversation, Message, Segment, Campaign, AutomationRule, ApiKey, WebhookConfig, WebhookLog, AnalyticsData } from './types';
+import { Contact, Conversation, Message, Segment, Campaign, AutomationRule, ApiKey, WebhookConfig, WebhookLog, AnalyticsData, QuickReply, PresetImage } from './types';
 
 export const INITIAL_CONTACTS: Contact[] = [
   {
@@ -17,7 +17,13 @@ export const INITIAL_CONTACTS: Contact[] = [
     notes: 'Interesada en plan empresarial para 15 usuarios. Solicitó descuento de pago anual.',
     lastActive: 'Hace 5 min',
     location: 'Bogotá, Colombia',
-    company: 'Innovatech Latin America'
+    company: 'Innovatech Latin America',
+    interactions: {
+      firstReply: true,
+      appointmentConfirmed: true,
+      proposalSent: true,
+      dealClosed: false
+    }
   },
   {
     id: 'c2',
@@ -34,7 +40,13 @@ export const INITIAL_CONTACTS: Contact[] = [
     notes: 'Preguntó por integración con Shopify e Instagram Shopping.',
     lastActive: 'Hace 12 min',
     location: 'Ciudad de México, México',
-    company: 'Mendoza Studio'
+    company: 'Mendoza Studio',
+    interactions: {
+      firstReply: true,
+      appointmentConfirmed: false,
+      proposalSent: false,
+      dealClosed: false
+    }
   },
   {
     id: 'c3',
@@ -51,7 +63,13 @@ export const INITIAL_CONTACTS: Contact[] = [
     notes: 'Necesita webhook personalizado para recibir eventos en su backend Express.',
     lastActive: 'Hace 25 min',
     location: 'Santiago, Chile',
-    company: 'StartupX'
+    company: 'StartupX',
+    interactions: {
+      firstReply: false,
+      appointmentConfirmed: false,
+      proposalSent: false,
+      dealClosed: false
+    }
   },
   {
     id: 'c4',
@@ -69,7 +87,13 @@ export const INITIAL_CONTACTS: Contact[] = [
     notes: 'Cliente renovó contrato anual de CRM Social omnicanal.',
     lastActive: 'Hace 1 hora',
     location: 'Buenos Aires, Argentina',
-    company: 'ArgenFood Corp'
+    company: 'ArgenFood Corp',
+    interactions: {
+      firstReply: true,
+      appointmentConfirmed: true,
+      proposalSent: true,
+      dealClosed: true
+    }
   },
   {
     id: 'c5',
@@ -86,7 +110,13 @@ export const INITIAL_CONTACTS: Contact[] = [
     notes: 'Presentó dudas sobre los tiempos de respuesta fuera de horario laboral.',
     lastActive: 'Hace 3 horas',
     location: 'Madrid, España',
-    company: 'FashionBrand ES'
+    company: 'FashionBrand ES',
+    interactions: {
+      firstReply: false,
+      appointmentConfirmed: false,
+      proposalSent: false,
+      dealClosed: false
+    }
   }
 ];
 
@@ -259,6 +289,7 @@ export const INITIAL_CAMPAIGN: Campaign[] = [
     segmentId: 'seg_1',
     segmentName: 'Leads WhatsApp Alta Intención',
     content: '🚀 ¡Hola {nombre}! Automatiza el 80% de tus chats en WhatsApp con nuestro nuevo motor de IA Gemini. Activa tu prueba gratis de 14 días respondiendo "IA NOW".',
+    imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80',
     status: 'completed',
     sentCount: 1250,
     deliveredCount: 1242,
@@ -274,6 +305,7 @@ export const INITIAL_CAMPAIGN: Campaign[] = [
     segmentId: 'seg_2',
     segmentName: 'Instagram E-Commerce & Creators',
     content: '✨ ¡Atención Creadores! Consigue 30% OFF en el plan Social CRM anual. Responde a esta conversación con "OFERTA30" para enviarte el código único.',
+    imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop&q=80',
     status: 'running',
     sentCount: 850,
     deliveredCount: 840,
@@ -408,3 +440,72 @@ export const INITIAL_ANALYTICS: AnalyticsData = {
     { sentiment: 'Riesgo Churn', count: 120, color: '#ef4444' }
   ]
 };
+
+export const INITIAL_QUICK_REPLIES: QuickReply[] = [
+  {
+    id: 'qr_1',
+    title: 'Saludo WhatsApp',
+    emoji: '⚡',
+    text: '¡Hola {nombre}! Gracias por comunicarte con nosotros vía XIO CRM. ¿En qué podemos asesorarte el día de hoy?',
+    category: 'saludo'
+  },
+  {
+    id: 'qr_2',
+    title: 'Catálogo & Precios',
+    emoji: '💰',
+    text: 'Hola {nombre}, te adjunto nuestra tabla de planes y módulos de XIO CRM. Los planes inician desde $15 USD/mes con usuarios y WhatsApp ilimitados.',
+    imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop&q=80',
+    category: 'precios'
+  },
+  {
+    id: 'qr_3',
+    title: 'Link Extensión Web',
+    emoji: '🧩',
+    text: 'Aquí tienes el acceso directo para activar la Extensión XIO CRM en tu WhatsApp Web: https://xio.app/extension-chrome',
+    imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80',
+    category: 'ventas'
+  },
+  {
+    id: 'qr_4',
+    title: 'Agendar Demo Calendar',
+    emoji: '📅',
+    text: 'Hola {nombre}, ¿te parece si agendamos una llamada de 15 minutos en Google Calendar para revisar tu caso y hacer una demo personalizada?',
+    category: 'ventas'
+  },
+  {
+    id: 'qr_5',
+    title: 'Datos de Pago / QR',
+    emoji: '💳',
+    text: '¡Excelente! Te comparto nuestros canales de pago oficiales para activar tu suscripción inmediatamente. Aceptamos Tarjetas, Transferencia Bancaria y PayPal.',
+    imageUrl: 'https://images.unsplash.com/photo-1556742049-0a67e55722c3?w=800&auto=format&fit=crop&q=80',
+    category: 'precios'
+  }
+];
+
+export const INITIAL_PRESET_IMAGES: PresetImage[] = [
+  {
+    id: 'preset_1',
+    name: 'Catálogo de Planes XIO',
+    url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop&q=80',
+    type: 'Precios / SaaS'
+  },
+  {
+    id: 'preset_2',
+    name: 'Banner Extensión WhatsApp',
+    url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80',
+    type: 'Extensión Web'
+  },
+  {
+    id: 'preset_3',
+    name: 'Código QR / Datos de Pago',
+    url: 'https://images.unsplash.com/photo-1556742049-0a67e55722c3?w=800&auto=format&fit=crop&q=80',
+    type: 'Pasarela / QR'
+  },
+  {
+    id: 'preset_4',
+    name: 'Demostración de CRM en Vivo',
+    url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop&q=80',
+    type: 'Demo / Analytics'
+  }
+];
+

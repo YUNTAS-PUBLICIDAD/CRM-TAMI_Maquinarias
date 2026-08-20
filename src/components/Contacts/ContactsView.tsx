@@ -9,6 +9,10 @@ import {
 interface ContactsViewProps {
   contacts: Contact[];
   onUpdateStage: (contactId: string, stage: PipelineStage) => void;
+  onToggleInteraction?: (
+    contactId: string,
+    interactionKey: 'firstReply' | 'appointmentConfirmed' | 'proposalSent' | 'dealClosed'
+  ) => void;
   onAddContact: (newContact: Omit<Contact, 'id'>) => void;
   onSelectConversationByContactId: (contactId: string) => void;
 }
@@ -16,6 +20,7 @@ interface ContactsViewProps {
 export const ContactsView: React.FC<ContactsViewProps> = ({
   contacts,
   onUpdateStage,
+  onToggleInteraction,
   onAddContact,
   onSelectConversationByContactId
 }) => {
@@ -23,6 +28,22 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedChannel, setSelectedChannel] = useState<string>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
+
+  // Helper to get channel color label
+  const getChannelColorClass = (channel: SocialChannel) => {
+    switch (channel) {
+      case 'whatsapp':
+        return 'text-emerald-600';
+      case 'instagram':
+        return 'text-sky-500';
+      case 'twitter':
+        return 'text-sky-400';
+      case 'messenger':
+        return 'text-blue-600';
+      default:
+        return 'text-purple-600';
+    }
+  };
 
   // New Contact Form State
   const [formData, setFormData] = useState({
@@ -74,7 +95,7 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
       leadScore: Math.floor(Math.random() * 30) + 65,
       stage: formData.stage,
       dealValue: Number(formData.dealValue) || 1200,
-      notes: 'Contacto registrado en el CRM Whato.',
+      notes: 'Contacto registrado en el CRM XIO.',
       lastActive: 'Ahora',
       company: formData.company || 'Empresa'
     });
@@ -99,7 +120,7 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
         <div>
           <div className="flex items-center gap-3">
             <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-              Embudo de Ventas Kanban (Whato CRM)
+              Embudo de Ventas Kanban (XIO CRM)
             </h2>
             <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full border border-emerald-200">
               {filteredContacts.length} Clientes Sincronizados
@@ -150,7 +171,7 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
             className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>Nuevo Cliente Whato</span>
+            <span>Nuevo Cliente XIO</span>
           </button>
         </div>
       </div>
@@ -224,25 +245,101 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
                           key={contact.id}
                           className="p-3.5 bg-white border border-slate-200 rounded-xl shadow-2xs hover:shadow-xs transition-all space-y-2.5 group"
                         >
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-2.5">
+                          {/* Top Section: Avatar + Name/Phone/Channel on Left, Monetary Value on Top Right */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-start gap-2.5 min-w-0">
                               <img
                                 src={contact.avatar}
                                 alt={contact.name}
-                                className="w-9 h-9 rounded-full object-cover border border-slate-200"
+                                className="w-9 h-9 rounded-full object-cover border border-slate-200 shrink-0 mt-0.5"
                               />
-                              <div>
-                                <h4 className="font-bold text-xs text-slate-900 group-hover:text-emerald-600 transition-colors">
+                              <div className="min-w-0">
+                                <h4 className="font-bold text-xs text-emerald-800 hover:text-emerald-900 transition-colors truncate">
                                   {contact.name}
                                 </h4>
-                                <p className="text-[10px] text-slate-400 font-mono">{contact.phone || contact.handle}</p>
+                                <p className="text-[10px] text-slate-400 font-mono tracking-tight">
+                                  {contact.phone || contact.handle}
+                                </p>
+                                <span className={`text-[11px] font-semibold lowercase block mt-0.5 ${getChannelColorClass(contact.channel)}`}>
+                                  {contact.channel}
+                                </span>
                               </div>
                             </div>
+
+                            {/* Monetary Value placed at top right as requested */}
+                            <span className="text-slate-700 font-semibold text-xs shrink-0 tracking-tight">
+                              ${contact.dealValue.toLocaleString()}
+                            </span>
                           </div>
 
-                          <div className="flex items-center justify-between text-xs font-semibold pt-1 border-t border-slate-100">
-                            <span className="text-emerald-600 font-extrabold">${contact.dealValue.toLocaleString()}</span>
-                            <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded border border-emerald-200">
+                          {/* 4 Interaction Indicator Boxes & Score Pill */}
+                          <div className="flex items-center justify-between gap-1.5 pt-0.5">
+                            <div className="flex items-start gap-1">
+                              {/* 1era Interacción (Rojo al activarse -> Pasa a Cualificados) */}
+                              <div className="flex flex-col items-center">
+                                <button
+                                  type="button"
+                                  onClick={() => onToggleInteraction && onToggleInteraction(contact.id, 'firstReply')}
+                                  title="1era Interacción: Respuesta positiva al 1er mensaje enviado por WhatsApp (Pasa automáticamente a Cualificados)"
+                                  className={`w-6 h-3 rounded-[2px] transition-all cursor-pointer ${
+                                    contact.interactions?.firstReply
+                                      ? 'bg-red-600 ring-1 ring-red-700/50 shadow-xs'
+                                      : 'bg-slate-200 hover:bg-slate-300 border border-slate-300'
+                                  }`}
+                                />
+                                <span className="text-[7px] text-slate-400 font-medium scale-90 whitespace-nowrap mt-0.5">
+                                  1era Interacion
+                                </span>
+                              </div>
+
+                              {/* 2da Interacción (Amarillo al activarse -> Pasa a Negociación) */}
+                              <div className="flex flex-col items-center">
+                                <button
+                                  type="button"
+                                  onClick={() => onToggleInteraction && onToggleInteraction(contact.id, 'appointmentConfirmed')}
+                                  title="2da Interacción: Respuesta positiva al recordatorio de cita (Pasa automáticamente a Negociación)"
+                                  className={`w-6 h-3 rounded-[2px] transition-all cursor-pointer ${
+                                    contact.interactions?.appointmentConfirmed
+                                      ? 'bg-yellow-400 ring-1 ring-yellow-500/50 shadow-xs'
+                                      : 'bg-slate-200 hover:bg-slate-300 border border-slate-300'
+                                  }`}
+                                />
+                                <span className="text-[7px] text-slate-400 font-medium scale-90 whitespace-nowrap mt-0.5">
+                                  2da Interacion
+                                </span>
+                              </div>
+
+                              {/* 3ra Interacción (Propuesta/Cotización) */}
+                              <div className="flex flex-col items-center">
+                                <button
+                                  type="button"
+                                  onClick={() => onToggleInteraction && onToggleInteraction(contact.id, 'proposalSent')}
+                                  title="3ra Interacción: Propuesta comercial enviada"
+                                  className={`w-6 h-3 rounded-[2px] transition-all cursor-pointer ${
+                                    contact.interactions?.proposalSent
+                                      ? 'bg-yellow-400 ring-1 ring-yellow-500/50 shadow-xs'
+                                      : 'bg-slate-200 hover:bg-slate-300 border border-slate-300'
+                                  }`}
+                                />
+                              </div>
+
+                              {/* 4ta Interacción (Cierre/Pago) */}
+                              <div className="flex flex-col items-center">
+                                <button
+                                  type="button"
+                                  onClick={() => onToggleInteraction && onToggleInteraction(contact.id, 'dealClosed')}
+                                  title="4ta Interacción: Venta Cerrada y Pago Confirmado"
+                                  className={`w-6 h-3 rounded-[2px] transition-all cursor-pointer ${
+                                    contact.interactions?.dealClosed
+                                      ? 'bg-yellow-400 ring-1 ring-yellow-500/50 shadow-xs'
+                                      : 'bg-slate-200 hover:bg-slate-300 border border-slate-300'
+                                  }`}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Score Pill Badge */}
+                            <span className="px-2 py-0.5 bg-emerald-50 text-emerald-800 text-[10px] font-bold rounded-md border border-emerald-300/80 shrink-0 shadow-2xs">
                               Score: {contact.leadScore}%
                             </span>
                           </div>
@@ -250,7 +347,7 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
                           {/* Tags */}
                           <div className="flex flex-wrap gap-1">
                             {contact.tags.slice(0, 2).map(t => (
-                              <span key={t} className="px-1.5 py-0.2 bg-slate-100 text-slate-600 text-[10px] rounded font-medium">
+                              <span key={t} className="px-2 py-0.5 bg-slate-100 text-slate-700 text-[10px] rounded font-medium">
                                 {t}
                               </span>
                             ))}
@@ -262,8 +359,9 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
                               onClick={() => onSelectConversationByContactId(contact.id)}
                               className="text-[11px] font-bold text-emerald-600 hover:text-emerald-800 flex items-center gap-1 cursor-pointer"
                             >
-                              <MessageSquare className="w-3 h-3" />
-                              <span>WhatsApp →</span>
+                              <MessageSquare className="w-3 h-3 text-emerald-600" />
+                              <span className="font-bold text-emerald-700">WhatsApp</span>
+                              <span className="text-emerald-700 font-bold">→</span>
                             </button>
 
                             <select
@@ -295,6 +393,7 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
                   <th className="p-3.5">Cliente</th>
                   <th className="p-3.5">Canal</th>
                   <th className="p-3.5">Etapa Embudo</th>
+                  <th className="p-3.5">Interacciones</th>
                   <th className="p-3.5">Valor Deal</th>
                   <th className="p-3.5">Score IA</th>
                   <th className="p-3.5">Etiquetas</th>
@@ -311,13 +410,51 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
                         <div className="text-[10px] text-slate-400 font-mono">{contact.email || contact.phone}</div>
                       </div>
                     </td>
-                    <td className="p-3.5 capitalize font-semibold">{contact.channel}</td>
+                    <td className="p-3.5 capitalize font-semibold">
+                      <span className={getChannelColorClass(contact.channel)}>{contact.channel}</span>
+                    </td>
                     <td className="p-3.5">
                       <span className="px-2.5 py-1 bg-slate-100 text-slate-800 text-[11px] font-bold rounded-lg border border-slate-200">
                         {contact.stage}
                       </span>
                     </td>
-                    <td className="p-3.5 font-bold text-emerald-600">${contact.dealValue.toLocaleString()}</td>
+                    <td className="p-3.5">
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => onToggleInteraction && onToggleInteraction(contact.id, 'firstReply')}
+                          title="1era Interacción (Rojo): Respuesta positiva mensaje WhatsApp -> Pasa a Cualificados"
+                          className={`w-5 h-3 rounded-[2px] cursor-pointer ${
+                            contact.interactions?.firstReply ? 'bg-red-600' : 'bg-slate-200'
+                          }`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => onToggleInteraction && onToggleInteraction(contact.id, 'appointmentConfirmed')}
+                          title="2da Interacción (Amarillo): Confirmación recordatorio de cita -> Pasa a Negociación"
+                          className={`w-5 h-3 rounded-[2px] cursor-pointer ${
+                            contact.interactions?.appointmentConfirmed ? 'bg-yellow-400' : 'bg-slate-200'
+                          }`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => onToggleInteraction && onToggleInteraction(contact.id, 'proposalSent')}
+                          title="3ra Interacción: Propuesta enviada"
+                          className={`w-5 h-3 rounded-[2px] cursor-pointer ${
+                            contact.interactions?.proposalSent ? 'bg-yellow-400' : 'bg-slate-200'
+                          }`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => onToggleInteraction && onToggleInteraction(contact.id, 'dealClosed')}
+                          title="4ta Interacción: Cierre/Pago"
+                          className={`w-5 h-3 rounded-[2px] cursor-pointer ${
+                            contact.interactions?.dealClosed ? 'bg-yellow-400' : 'bg-slate-200'
+                          }`}
+                        />
+                      </div>
+                    </td>
+                    <td className="p-3.5 font-bold text-slate-800">${contact.dealValue.toLocaleString()}</td>
                     <td className="p-3.5 font-extrabold text-emerald-600">{contact.leadScore}%</td>
                     <td className="p-3.5">
                       <div className="flex flex-wrap gap-1">
@@ -349,7 +486,7 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900">Registrar Nuevo Cliente en Whato CRM</h3>
+              <h3 className="text-base font-bold text-slate-900">Registrar Nuevo Cliente en XIO CRM</h3>
               <button 
                 onClick={() => setIsAddModalOpen(false)}
                 className="text-slate-400 hover:text-slate-600 font-bold cursor-pointer"

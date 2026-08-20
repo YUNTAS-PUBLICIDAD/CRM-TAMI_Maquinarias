@@ -61,15 +61,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside className="w-64 bg-slate-950 text-slate-300 flex flex-col shrink-0 select-none border-r border-slate-800/80">
-      {/* Whato Brand Header */}
+      {/* XIO Brand Header */}
       <div className="h-16 px-5 flex items-center justify-between border-b border-slate-800/80 bg-slate-950">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-emerald-500 text-slate-950 flex items-center justify-center shadow-lg shadow-emerald-500/20 font-black text-xl tracking-tight shrink-0">
-            W
+            X
           </div>
           <div>
             <div className="font-extrabold text-white text-base tracking-tight flex items-center gap-1.5">
-              <span>Whato</span>
+              <span>XIO</span>
               <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-md font-bold">
                 CRM
               </span>
@@ -127,7 +127,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
             Gestión Interna
           </span>
-          <span className="text-[10px] text-slate-400 font-bold">Whato Enterprise</span>
+          <span className="text-[10px] text-slate-400 font-bold">XIO Enterprise</span>
         </div>
 
         <div className="space-y-1.5 text-slate-300 text-[11px] font-medium">

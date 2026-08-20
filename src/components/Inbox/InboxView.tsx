@@ -1,24 +1,28 @@
 import React, { useState } from 'react';
 import { 
-  Conversation, Message, Contact, SocialChannel, LeadSentiment, PipelineStage 
+  Conversation, Message, Contact, SocialChannel, LeadSentiment, PipelineStage, QuickReply 
 } from '../../types';
 import { 
   MessageSquare, Send, Sparkles, Phone, Mail, Tag, DollarSign, 
   TrendingUp, AlertCircle, CheckCircle, Clock, Bot, User, Filter,
-  CheckCheck, Image, Paperclip, ChevronRight, FileText, RefreshCw, Zap,
-  Chrome, Calendar, Mic, Check, Star, ExternalLink, HelpCircle
+  CheckCheck, Image as ImageIcon, Paperclip, ChevronRight, FileText, RefreshCw, Zap,
+  Chrome, Calendar, Mic, Check, Star, ExternalLink, HelpCircle, SlidersHorizontal, Edit3,
+  FolderOpen, Plus
 } from 'lucide-react';
+import { QuickRepliesModal } from './QuickRepliesModal';
 
 interface InboxViewProps {
   conversations: Conversation[];
   activeConversationId: string;
   onSelectConversation: (id: string) => void;
   messagesMap: Record<string, Message[]>;
-  onSendMessage: (conversationId: string, text: string, aiGenerated?: boolean) => void;
+  onSendMessage: (conversationId: string, text: string, aiGenerated?: boolean, mediaUrl?: string) => void;
   onUpdateContactStage: (contactId: string, newStage: PipelineStage) => void;
   onUpdateContactTags: (contactId: string, newTags: string[]) => void;
   onUpdateContactNotes: (contactId: string, newNotes: string) => void;
   searchQuery: string;
+  quickReplies?: QuickReply[];
+  onUpdateQuickReplies?: (updated: QuickReply[]) => void;
 }
 
 export const InboxView: React.FC<InboxViewProps> = ({
@@ -30,13 +34,18 @@ export const InboxView: React.FC<InboxViewProps> = ({
   onUpdateContactStage,
   onUpdateContactTags,
   onUpdateContactNotes,
-  searchQuery
+  searchQuery,
+  quickReplies = [],
+  onUpdateQuickReplies
 }) => {
   const [channelFilter, setChannelFilter] = useState<string>('all');
   const [inputText, setInputText] = useState<string>('');
   const [tagInput, setTagInput] = useState<string>('');
+  const [isQuickRepliesModalOpen, setIsQuickRepliesModalOpen] = useState<boolean>(false);
+  const [attachedImageUrl, setAttachedImageUrl] = useState<string>('');
+  const [showAttachInput, setShowAttachInput] = useState<boolean>(false);
 
-  // Whato Extension Panel Toggle State
+  // XIO Extension Panel Toggle State
   const [showExtensionPanel, setShowExtensionPanel] = useState<boolean>(true);
   const [calendarDate, setCalendarDate] = useState<string>('2026-08-12');
   const [calendarTime, setCalendarTime] = useState<string>('15:00');
@@ -69,16 +78,36 @@ export const InboxView: React.FC<InboxViewProps> = ({
 
   // Handle Send
   const handleSend = () => {
-    if (!inputText.trim() || !activeConv) return;
-    onSendMessage(activeConv.id, inputText.trim());
+    if ((!inputText.trim() && !attachedImageUrl) || !activeConv) return;
+    onSendMessage(activeConv.id, inputText.trim(), false, attachedImageUrl || undefined);
     setInputText('');
+    setAttachedImageUrl('');
+    setShowAttachInput(false);
     setAiSuggestions(null);
+  };
+
+  // Handle Execute Quick Reply
+  const handleExecuteQuickReply = (qr: QuickReply) => {
+    if (!contact || !activeConv) return;
+    const replacedText = qr.text
+      .replace(/{nombre}/g, contact.name)
+      .replace(/{empresa}/g, contact.company || '')
+      .replace(/{canal}/g, contact.channel)
+      .replace(/{agente}/g, activeConv.assignedAgent || 'Asistente XIO');
+
+    if (qr.imageUrl) {
+      // Send directly with text + image attachment
+      onSendMessage(activeConv.id, replacedText, false, qr.imageUrl);
+    } else {
+      // Set to input composer
+      setInputText(replacedText);
+    }
   };
 
   // Handle Send Voice Note Simulation
   const handleSendVoiceNote = () => {
     if (!activeConv) return;
-    onSendMessage(activeConv.id, '🎙️ [Nota de Voz enviada via Whato CRM: 0:24]');
+    onSendMessage(activeConv.id, '🎙️ [Nota de Voz enviada via XIO CRM: 0:24]');
   };
 
   // Schedule Meeting in Google Calendar
@@ -315,18 +344,18 @@ export const InboxView: React.FC<InboxViewProps> = ({
                 </div>
               </div>
 
-              {/* Whato Extension & AI Quick Actions */}
+              {/* XIO Extension & AI Quick Actions */}
               <div className="flex items-center gap-2">
-                {/* Whato Chrome Extension Panel Toggle */}
+                {/* XIO Chrome Extension Panel Toggle */}
                 <button
                   onClick={() => setShowExtensionPanel(!showExtensionPanel)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     showExtensionPanel ? 'bg-emerald-600 text-white shadow-xs' : 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'
                   }`}
-                  title="Muestra u oculta la barra lateral de la Extensión Whato para WhatsApp Web"
+                  title="Muestra u oculta la barra lateral de la Extensión XIO para WhatsApp Web"
                 >
                   <Chrome className="w-3.5 h-3.5" />
-                  <span>Extensión Whato</span>
+                  <span>Extensión XIO</span>
                 </button>
 
                 {/* AI Summary Button */}
@@ -365,7 +394,7 @@ export const InboxView: React.FC<InboxViewProps> = ({
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 font-bold text-emerald-900">
                     <Sparkles className="w-4 h-4 text-emerald-600" />
-                    <span>Resumen Ejecutivo IA (Whato + Gemini 3.6):</span>
+                    <span>Resumen Ejecutivo IA (XIO + Gemini 3.6):</span>
                   </div>
                   <p className="text-slate-700 leading-relaxed">{summaryData.summary}</p>
                   <div className="flex items-center gap-4 text-[11px] text-slate-600 pt-1">
@@ -388,7 +417,7 @@ export const InboxView: React.FC<InboxViewProps> = ({
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-bold text-emerald-900 flex items-center gap-1.5">
                     <Zap className="w-3.5 h-3.5 text-emerald-600" />
-                    Sugerencias Whato IA (Haz clic para enviar):
+                    Sugerencias XIO IA (Haz clic para enviar):
                   </span>
                   {aiReasoning && <span className="text-[11px] text-emerald-800 italic">{aiReasoning}</span>}
                 </div>
@@ -421,7 +450,7 @@ export const InboxView: React.FC<InboxViewProps> = ({
                     className={`flex flex-col ${isAgent ? 'items-end' : 'items-start'}`}
                   >
                     <div className="flex items-center gap-1.5 mb-1 text-[10px] text-slate-500 font-medium">
-                      <span>{msg.senderName || (isAgent ? 'Agente Whato' : contact.name)}</span>
+                      <span>{msg.senderName || (isAgent ? 'Agente XIO' : contact.name)}</span>
                       <span>•</span>
                       <span>{msg.timestamp}</span>
                       {msg.aiGenerated && (
@@ -432,13 +461,34 @@ export const InboxView: React.FC<InboxViewProps> = ({
                     </div>
 
                     <div
-                      className={`max-w-md rounded-2xl px-4 py-2.5 text-xs leading-relaxed shadow-xs ${
+                      className={`max-w-md rounded-2xl p-3 text-xs leading-relaxed shadow-xs ${
                         isAgent
                           ? 'bg-[#dcf8c6] text-slate-900 rounded-tr-xs border border-emerald-200/80'
                           : 'bg-white text-slate-800 border border-slate-200 rounded-tl-xs'
                       }`}
                     >
-                      {msg.text}
+                      {/* Attached Image inside WhatsApp Bubble */}
+                      {msg.mediaUrl && (
+                        <div className="mb-2 rounded-xl overflow-hidden border border-black/10 bg-black/5 shadow-2xs">
+                          <img
+                            src={msg.mediaUrl}
+                            alt="Adjunto"
+                            className="w-full max-h-60 object-cover cursor-pointer hover:opacity-95 transition-opacity"
+                            onClick={() => window.open(msg.mediaUrl, '_blank')}
+                          />
+                        </div>
+                      )}
+
+                      {msg.text && (
+                        <p className="whitespace-pre-line leading-relaxed">
+                          {msg.text}
+                        </p>
+                      )}
+
+                      <div className="flex items-center justify-end gap-1 text-[10px] text-slate-400 mt-1">
+                        <span>{msg.timestamp}</span>
+                        {isAgent && <span className="text-emerald-700 font-bold">✓✓</span>}
+                      </div>
                     </div>
                   </div>
                 );
@@ -447,38 +497,133 @@ export const InboxView: React.FC<InboxViewProps> = ({
 
             {/* Quick Templates Bar & Composer */}
             <div className="p-3 border-t border-slate-200 bg-white space-y-2">
-              {/* Quick Reply Shortcuts */}
-              <div className="flex items-center gap-1.5 overflow-x-auto text-xs pb-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase shrink-0">Respuestas Rápida:</span>
-                <button 
-                  onClick={() => setInputText(`¡Hola ${contact.name}! Gracias por comunicarte con nosotros vía Whato CRM. ¿En qué podemos asesorarte hoy?`)}
-                  className="px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 hover:border-emerald-300 border border-slate-200 text-slate-700 rounded-lg text-[11px] font-medium shrink-0 cursor-pointer"
+              {/* Quick Reply Shortcuts - Configurable & Dynamic */}
+              <div className="flex items-center gap-1.5 overflow-x-auto text-xs pb-1 no-scrollbar">
+                <div className="flex items-center gap-1 shrink-0 bg-slate-100 px-2 py-1 rounded-lg border border-slate-200">
+                  <span className="text-[10px] font-extrabold text-slate-600 uppercase tracking-wider flex items-center gap-1">
+                    <Zap className="w-3 h-3 text-emerald-600" />
+                    <span>Respuestas Rápidas</span>
+                    <span className="px-1.5 py-0.2 bg-emerald-600 text-white rounded-full text-[9px] font-mono">
+                      {quickReplies.length}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setIsQuickRepliesModalOpen(true)}
+                    title="Configurar y crear plantillas ilimitadas"
+                    className="p-1 text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-md transition-colors cursor-pointer"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsQuickRepliesModalOpen(true)}
+                  className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-lg text-[11px] font-bold shrink-0 flex items-center gap-1 cursor-pointer transition-all shadow-2xs"
+                  title="Crear una nueva plantilla"
                 >
-                  ⚡ Saludo WhatsApp
+                  <Plus className="w-3 h-3 text-emerald-700" />
+                  <span>+ Plantilla</span>
                 </button>
-                <button 
-                  onClick={() => setInputText(`Hola ${contact.name}, los planes de Whato CRM inician en $15/mes e incluyen extensión para WhatsApp Web, Kanban y Chatbot IA.`)}
-                  className="px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 hover:border-emerald-300 border border-slate-200 text-slate-700 rounded-lg text-[11px] font-medium shrink-0 cursor-pointer"
-                >
-                  💰 Planes / Precios
-                </button>
-                <button 
-                  onClick={() => setInputText(`Te adjunto el enlace para probar la Extensión Whato Web gratis por 3 días: https://whato.app/extension`)}
-                  className="px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 hover:border-emerald-300 border border-slate-200 text-slate-700 rounded-lg text-[11px] font-medium shrink-0 cursor-pointer"
-                >
-                  🧩 Link Extensión
-                </button>
+
+                {quickReplies.map((qr) => (
+                  <button 
+                    key={qr.id}
+                    onClick={() => handleExecuteQuickReply(qr)}
+                    title={qr.imageUrl ? `Enviar: "${qr.text}" + Imagen adjunta` : `Insertar: "${qr.text}"`}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-medium shrink-0 flex items-center gap-1.5 transition-all cursor-pointer ${
+                      qr.imageUrl
+                        ? 'bg-emerald-50 hover:bg-emerald-100/90 text-emerald-900 border border-emerald-300 shadow-2xs font-semibold'
+                        : 'bg-slate-100 hover:bg-emerald-50 hover:border-emerald-300 border border-slate-200 text-slate-700'
+                    }`}
+                  >
+                    <span>{qr.emoji || '⚡'}</span>
+                    <span>{qr.title}</span>
+                    {qr.imageUrl && (
+                      <ImageIcon className="w-3 h-3 text-emerald-600 shrink-0" />
+                    )}
+                  </button>
+                ))}
+
                 <button 
                   onClick={handleSendVoiceNote}
                   className="px-2.5 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-200 rounded-lg text-[11px] font-bold shrink-0 flex items-center gap-1 cursor-pointer"
                 >
                   <Mic className="w-3 h-3 text-emerald-600" />
-                  <span>Enviar Nota de Voz</span>
+                  <span>Nota de Voz</span>
                 </button>
               </div>
 
+              {/* Optional Attached Image Input Bar */}
+              {showAttachInput && (
+                <div className="p-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-2">
+                  <ImageIcon className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <input
+                    type="url"
+                    value={attachedImageUrl}
+                    onChange={(e) => setAttachedImageUrl(e.target.value)}
+                    placeholder="Pega la URL de una imagen (ej: https://...)"
+                    className="flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-emerald-500"
+                  />
+                  <label 
+                    title="Subir imagen desde tu PC"
+                    className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors shrink-0"
+                  >
+                    <FolderOpen className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Subir de PC</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                          if (ev.target?.result) {
+                            setAttachedImageUrl(ev.target.result as string);
+                          }
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                  </label>
+                  {attachedImageUrl && (
+                    <img
+                      src={attachedImageUrl}
+                      alt="Preview"
+                      className="w-7 h-7 rounded object-cover border border-slate-200 shadow-2xs shrink-0"
+                    />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAttachInput(false);
+                      setAttachedImageUrl('');
+                    }}
+                    className="text-slate-400 hover:text-slate-600 text-xs px-1 font-bold cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
               {/* Text Input Area */}
               <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl p-2 focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
+                <button
+                  type="button"
+                  onClick={() => setShowAttachInput(!showAttachInput)}
+                  title="Adjuntar imagen por URL"
+                  className={`p-2 rounded-lg transition-colors cursor-pointer ${
+                    attachedImageUrl || showAttachInput
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/60'
+                  }`}
+                >
+                  <ImageIcon className="w-4 h-4" />
+                </button>
+
                 <textarea
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
@@ -495,7 +640,7 @@ export const InboxView: React.FC<InboxViewProps> = ({
 
                 <button
                   onClick={handleSend}
-                  disabled={!inputText.trim()}
+                  disabled={!inputText.trim() && !attachedImageUrl}
                   className="p-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-all disabled:opacity-40 cursor-pointer shadow-xs active:scale-95 shrink-0"
                 >
                   <Send className="w-4 h-4" />
@@ -510,18 +655,40 @@ export const InboxView: React.FC<InboxViewProps> = ({
         )}
       </div>
 
-      {/* COLUMN 3: Right Sidepanel (Whato Extension & Contact CRM Info) */}
+      {/* COLUMN 3: Right Sidepanel (XIO Extension & Contact CRM Info) */}
       {contact && showExtensionPanel && (
         <div className="w-80 bg-white border-l border-slate-200 flex flex-col shrink-0 overflow-y-auto">
           {/* Extension Header Banner */}
           <div className="p-4 border-b border-slate-200 bg-emerald-950 text-white flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Chrome className="w-4 h-4 text-emerald-400" />
-              <span className="font-bold text-xs tracking-wide text-emerald-300">Extensión Whato CRM</span>
+              <span className="font-bold text-xs tracking-wide text-emerald-300">Extensión XIO CRM</span>
             </div>
             <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 text-[10px] font-bold rounded">
               v3.4 Activa
             </span>
+          </div>
+
+          {/* Dedicated "Respuestas Rápidas" Button in Right Dashboard */}
+          <div className="p-3.5 border-b border-slate-200 bg-slate-50/80">
+            <button
+              type="button"
+              onClick={() => setIsQuickRepliesModalOpen(true)}
+              className="w-full py-2.5 px-3 bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 rounded-xl text-xs font-bold text-slate-800 flex items-center justify-between transition-all shadow-2xs group cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                  <Zap className="w-3.5 h-3.5" />
+                </div>
+                <span className="group-hover:text-emerald-900">Respuestas Rápidas</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md border border-emerald-200">
+                  {quickReplies.length} Botones
+                </span>
+                <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600" />
+              </div>
+            </button>
           </div>
 
           {/* Contact Avatar Header */}
@@ -549,35 +716,56 @@ export const InboxView: React.FC<InboxViewProps> = ({
                 <Calendar className="w-3.5 h-3.5 text-emerald-600" />
                 <span>Agendar en Google Calendar</span>
               </label>
+              <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-100/80 px-1.5 py-0.5 rounded">
+                Sincronización
+              </span>
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-xs">
-              <input
-                type="date"
-                value={calendarDate}
-                onChange={(e) => setCalendarDate(e.target.value)}
-                className="p-1.5 bg-white border border-slate-200 rounded-lg text-xs"
-              />
-              <input
-                type="time"
-                value={calendarTime}
-                onChange={(e) => setCalendarTime(e.target.value)}
-                className="p-1.5 bg-white border border-slate-200 rounded-lg text-xs"
-              />
+              <div>
+                <span className="text-[10px] text-slate-500 block mb-0.5 font-medium">Fecha:</span>
+                <input
+                  type="date"
+                  value={calendarDate}
+                  onChange={(e) => setCalendarDate(e.target.value)}
+                  className="w-full p-1.5 bg-white border border-slate-200 rounded-lg text-xs"
+                />
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-500 block mb-0.5 font-medium">Hora:</span>
+                <input
+                  type="time"
+                  value={calendarTime}
+                  onChange={(e) => setCalendarTime(e.target.value)}
+                  className="w-full p-1.5 bg-white border border-slate-200 rounded-lg text-xs"
+                />
+              </div>
             </div>
 
-            <button
-              onClick={handleScheduleGoogleCalendar}
-              className="w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition-all cursor-pointer shadow-2xs"
-            >
-              📅 Sincronizar Cita en Google Calendar
-            </button>
+            <div className="space-y-1.5 pt-1">
+              <button
+                onClick={handleScheduleGoogleCalendar}
+                className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-1.5"
+              >
+                <span>📅 Sincronizar y Notificar en Chat</span>
+              </button>
+
+              <a
+                href={`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`Reunión Demo / Asesoría: ${contact.name} - XIO CRM`)}&dates=${calendarDate.replace(/-/g, '')}T${calendarTime.replace(/:/g, '')}00/${calendarDate.replace(/-/g, '')}T${calendarTime.replace(/:/g, '')}00&details=${encodeURIComponent(`Reunión agendada vía XIO CRM.\nCliente: ${contact.name}\nEmpresa: ${contact.company || 'N/A'}\nTel/WhatsApp: ${contact.phone || contact.handle}\nEmail: ${contact.email || 'N/A'}\nNotas: ${contact.notes || ''}`)}&location=${encodeURIComponent('Google Meet / WhatsApp Video')}${contact.email ? `&add=${encodeURIComponent(contact.email)}` : ''}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-1.5 bg-white hover:bg-slate-100 border border-slate-200 hover:border-slate-300 text-slate-700 font-bold rounded-lg text-xs transition-all flex items-center justify-center gap-1 text-center"
+              >
+                <span>Abrir en Google Calendar Web</span>
+                <ExternalLink className="w-3 h-3 text-slate-400" />
+              </a>
+            </div>
           </div>
 
           {/* Pipeline Stage Selector */}
           <div className="p-4 border-b border-slate-200 space-y-2">
             <label className="text-xs font-bold text-slate-700 block">
-              Etapa del Funnel (CRM Whato)
+              Etapa del Funnel (CRM XIO)
             </label>
             <select
               value={contact.stage}
@@ -643,7 +831,7 @@ export const InboxView: React.FC<InboxViewProps> = ({
           {/* Internal Notes */}
           <div className="p-4 space-y-2">
             <label className="text-xs font-bold text-slate-700 block">
-              Notas Rápidas (Extensión Whato)
+              Notas Rápidas (Extensión XIO)
             </label>
             <textarea
               value={contact.notes}
@@ -654,6 +842,20 @@ export const InboxView: React.FC<InboxViewProps> = ({
             />
           </div>
         </div>
+      )}
+
+      {/* Quick Replies Management Modal */}
+      {isQuickRepliesModalOpen && (
+        <QuickRepliesModal
+          isOpen={isQuickRepliesModalOpen}
+          onClose={() => setIsQuickRepliesModalOpen(false)}
+          quickReplies={quickReplies}
+          onSaveQuickReplies={(updated) => {
+            if (onUpdateQuickReplies) {
+              onUpdateQuickReplies(updated);
+            }
+          }}
+        />
       )}
     </div>
   );

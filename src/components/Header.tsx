@@ -22,14 +22,14 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const getTabTitle = (tab: string) => {
     switch (tab) {
-      case 'inbox': return 'Inbox Omnicanal Whato (WhatsApp Multi-Agente & Extension)';
+      case 'inbox': return 'Inbox Omnicanal XIO (WhatsApp Multi-Agente & Extension)';
       case 'contacts': return 'CRM Kanban de Ventas WhatsApp & Clientes';
       case 'segments': return 'Segmentos & Filtros Avanzados de Audiencia';
       case 'campaigns': return 'Difusión Masiva en WhatsApp & Asistente IA';
       case 'automation': return 'Automatización, Reglas & Auto-respondedores';
       case 'analytics': return 'Métricas de Rendimiento & Reportes en Tiempo Real';
       case 'api-github': return 'Integración API REST, Webhooks & Exportación GitHub';
-      default: return 'Whato CRM';
+      default: return 'XIO CRM';
     }
   };
 
@@ -49,7 +49,7 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="text-slate-300">•</span>
             <span className="flex items-center gap-1.5 font-semibold text-slate-600">
               <Chrome className="w-3.5 h-3.5 text-emerald-600" />
-              Extensión Whato v3.4.1
+              Extensión XIO v3.4.1
             </span>
           </div>
         </div>
